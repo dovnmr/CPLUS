@@ -1,0 +1,49 @@
+name: C/C++ CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        submodules: true
+    - run: sudo apt-get update && sudo apt-get install libboost-test-dev -y
+    - run: cmake . -DPATCH_VERSION=${{ github.eun_number }}
+    - run: cmake --build .
+    - run: cmake --build . --target test
+    - run: cmake --build . --target package
+#    - name: configure
+#      run: ./configure
+    - name: Create_Release
+      id: create_release
+      uses: actions/create_release@v1
+      env: 
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ github.run_numbers }}
+        release_name: Release ${{ github.run_numbers }}
+        draft: false
+        prerelease: false
+    - name: Upload Release Asset
+      id: upload-release-asset
+      uses: actions/upload_release_asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: {{ steps.create_release.outputs.upload_url }}
+        asset_path: ./helloworld-0.0.${{ github.run_number }}-Linux.deb
+        asset_name: helloworld-0.0.${{ github.run_number }}-Linux.deb
+        asset_content_type: application/vnd.debian.binary-package
+#      run: make
+#    - name: make check
+#      run: make check
+#    - name: make distcheck
+#      run: make distcheck
